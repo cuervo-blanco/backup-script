@@ -2,7 +2,7 @@
 
 # Function to display the usage of the program
 function display_help() {
-    echo "Usage: $0 [-s] [-t] source_directory [destination_directory]"
+    echo "Usage: $0 [-s] [-t] [-u] source_directory [destination_directory]"
     echo ""
     echo "This script copies all files from the specified source directory"
     echo "to the specified destination directory or to a backup folder"
@@ -11,6 +11,7 @@ function display_help() {
     echo "Options:"
     echo " -s       Make the backup directory not hidden"
     echo " -t       Add a timestamp to the backup directory name"
+    echo " -u       Update the most existing backup directory"
     echo " -help    Display this help message and exit"
 }
 
@@ -23,18 +24,22 @@ fi
 # Initialize variables
 HIDDEN=true
 TIMESTAMP=false
+UPDATE=false
 SOURCE_DIR=""
 DEST_DIR=""
 BASE_DIR=""
 
 # Parse options
-while getopts ":s" opt; do
+while getopts ":stu" opt; do
     case ${opt} in
         s )
             HIDDEN=false
             ;;
         t )
             TIMESTAMP=true
+            ;;
+        u )
+            UPDATE=true
             ;;
         \? )
             echo "Invalid option: $OPTARG" 1>&2
@@ -47,7 +52,7 @@ shift $((OPTIND -1))
 
 # Check if the correct number of arguments is provided
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
-    echo "Usage: $0 [-s] [-t] source directory [destination_directory]"
+    echo "Usage: $0 [-s] [-t] [-u] source directory [destination_directory]"
     echo "Type $0 -help for more information"
     exit 1
 fi
@@ -90,7 +95,27 @@ fi
 # Create the .backup directory if it doesn't exist
 mkdir -p "$BACKUP_DIR"
 
-# Copy the files and log the operation
+# Log file inside the backup directory
+LOG_FILE="$BACKUP_DIR/backup_log.txt"
 echo "Backup started at $(date)" >> "$LOG_FILE"
-cp -r "$SOURCE_DIR"/* "$BACKUP_DIR" && echo "Backup of $SOURCE_DIR to $BACKUP_DIR completed at $(date)" >> "$LOG_FILE"
+
+# Function to perform the backup
+function perform_backup() {
+    local src_dir=$1
+    local dest_dir=$2
+    local log_file=$3
+    local update=$4
+
+    if $update; then
+        rsync -av --update "$src_dir"/* "$dest_dir" | tee -a "$log_file"
+    else
+        cp -r "$src_dir"/* "$dest_dir"
+        echo "Backup of $src_dir to $dest_dir completed at $(date)" >> "$log_file"
+    fi
+}
+
+# Perform the backup
+perform_backup "$SOURCE_DIR" "$BACKUP_DIR" "$LOG_FILE" $UPDATE
+
+# Copy the files and log the operation
 echo "Backup completed successfully."
