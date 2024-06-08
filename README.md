@@ -1,67 +1,85 @@
 # Backup Script
 
-This script copies all files from the specified source directory to a specified destination directory or to a backup folder in the current directory named after the source directory.
+This is a simple Bash script to back up files from a specified source directory to a destination directory or a backup folder in the current directory. The backup folder can be named with a timestamp, hidden, or updated from a previous backup.
 
 ## Usage
 
 ```bash
-./backup.sh [-s] source_directory [destination_directory]
+./backup.sh [-s] [-t] [-u] source_directory [destination_directory]
 ```
+
+## Description
+
+This script copies all files from the specified source directory to the specified destination directory or to a backup folder in the current directory named after the source directory.
 
 ## Options
 
-- `-s`: Make the backup directory not hidden.
-- `-help`: Display the help message and exit.
+- `-s` : Make the backup directory not hidden.
+- `-t` : Add a timestamp to the backup directory name.
+- `-u` : Update the existing backup directory.
+- `-tu` : Timestamp and update the latest backup.
+- `-help` : Display the help message and exit.
 
 ## Examples
 
-1. **Basic usage**: Copy files from `source_directory` to a hidden backup directory in the current directory.
-
+1. Basic usage with a source directory:
     ```bash
-    ./backup.sh /path/to/source_directory
+    ./backup.sh /path/to/source
     ```
 
-    This will create a hidden backup directory named `./.source_directory_backup` and copy the files there.
-
-2. **Specify a destination directory**: Copy files from `source_directory` to a hidden backup directory in the specified destination directory.
-
+2. Specifying a destination directory:
     ```bash
-    ./backup.sh /path/to/source_directory /path/to/destination_directory
+    ./backup.sh /path/to/source /path/to/destination
     ```
 
-    This will create a hidden backup directory named `/path/to/destination_directory/.source_directory_backup` and copy the files there.
-
-3. **Non-hidden backup directory**: Use the `-s` flag to make the backup directory not hidden.
-
+3. Adding a timestamp to the backup directory name:
     ```bash
-    ./backup.sh -s /path/to/source_directory
+    ./backup.sh -t /path/to/source
     ```
 
-    This will create a backup directory named `./source_directory_backup` and copy the files there.
-
-4. **Non-hidden backup directory with a specified destination**:
-
+4. Creating a non-hidden backup directory:
     ```bash
-    ./backup.sh -s /path/to/source_directory /path/to/destination_directory
+    ./backup.sh -s /path/to/source
     ```
 
-    This will create a backup directory named `/path/to/destination_directory/source_directory_backup` and copy the files there.
-
-## Help
-
-To display the help message, run:
-
-```bash
-./backup.sh -help
-```
-
-## Error Handling
-
-- If the source directory does not exist, the script will output an error message and exit.
-- If the destination directory is specified but does not exist, the script will output an error message and exit.
+5. Updating the latest backup:
+    ```bash
+    ./backup.sh -u /path/to/source
+    ```
 
 ## Notes
 
-- The default behavior is to create a hidden backup directory. Use the `-s` flag to create a non-hidden backup directory.
-- The script requires at least one argument (the source directory) and can optionally take a second argument (the destination directory).
+- The script will create a hidden backup directory by default. Use the `-s` option to make it visible.
+- If the `-t` option is used, a timestamp will be appended to the backup directory name.
+- If the `-u` option is used, the script will find the most recent backup and update it.
+- The `-help` option provides usage information and exits.
+
+## Script Details
+
+### display_help()
+
+Displays the usage information.
+
+### perform_backup()
+
+Performs the actual backup operation. Uses `rsync` if updating an existing backup, otherwise uses `cp` to copy files.
+
+### Main Execution Flow
+
+1. Parse options (`-s`, `-t`, `-u`).
+2. Validate source and destination directories.
+3. Determine the backup directory name based on options.
+4. Create the backup directory if it does not exist.
+5. Log the start of the backup operation.
+6. Perform the backup using `perform_backup`.
+7. Rename the backup directory if needed.
+8. Log the completion of the backup operation.
+
+## License
+
+This script is provided as-is without any warranty. Use it at your own risk.
+
+## Author
+
+Jaime Osvaldo
 
