@@ -11,7 +11,8 @@ function display_help() {
     echo "Options:"
     echo " -s       Make the backup directory not hidden"
     echo " -t       Add a timestamp to the backup directory name"
-    echo " -u       Update the most existing backup directory"
+    echo " -u       Update the existing backup directory"
+    echo " -tu      Timestamp and update the latest backup"
     echo " -help    Display this help message and exit"
 }
 
@@ -81,15 +82,25 @@ fi
 
 BASENAME=$(basename "$SOURCE_DIR")
 if $HIDDEN; then
-    BACKUP_DIR="$BASE_DIR/.$BASENAME"
+    BACKUP_DIR="$BASE_DIR/.$BASENAME"_backup
 else
-    BACKUP_DIR="$BASE_DIR/$BASENAME"
+    BACKUP_DIR="$BASE_DIR/$BASENAME"_backup
 fi
 
-if $TIMESTAMP; then
-    BACKUP_DIR="${BACKUP_DIR}_$(date + %Y%m%d_%H%M%S)"
-else
-    BACKUP_DIR="${BACKUP_DIR}_backup"
+# Handle timestamp
+if [ $TIMESTAMP ]; then
+    TIMESTAMP=$(date +V%y%m%d-T%H%M%S)
+    BACKUP_DIR="${BACKUP_DIR}_$TIMESTAMP"
+fi
+
+# Find the most recent backup
+if $UPDATE; then
+    LATEST_BACKUP=$(find "$BASE_DIR" -type d -name "$BASENAME"_backup\* | sort -r | head -n 1)
+    if [ -z "$LATEST_BACKUP" ]; then
+        echo "No  previous backup found to update."
+        exit 1
+    fi
+    BACKUP_DIR=$LATEST_BACKUP
 fi
 
 # Create the .backup directory if it doesn't exist
@@ -116,6 +127,14 @@ function perform_backup() {
 
 # Perform the backup
 perform_backup "$SOURCE_DIR" "$BACKUP_DIR" "$LOG_FILE" $UPDATE
+
+# Rename the backup directory if using timestamp and update
+if [ $TIMESTAMP ] && [ $UPDATE ]; then
+    NEW_BACKUP_DIR="${BACKUP_DIR%_*}_$TIMESTAMP"
+    mv "$BACKUP_DIR" "$NEW_BACKUP_DIR"
+    BACKUP_DIR=$NEW_BACKUP_DIR
+    echo "Backup updated and renamed to $BACKUP_DIR" | tee -a "$BACKUP_DIR/backup_log.txt"
+fi
 
 # Copy the files and log the operation
 echo "Backup completed successfully."
